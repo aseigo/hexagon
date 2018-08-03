@@ -67,12 +67,13 @@ defmodule Hexagon do
   end
 
   defp get_deps(path) do
-    :exec.run('mix deps.get', [:sync, :stderr, {:cd, path}])
+    :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, path}])
     |> command_completed(path, "deps.get")
   end
 
   defp compile(path) do
-    :exec.run('mix compile', [:sync, :stderr, {:cd, path}])
+    :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, path}])
+    |> IO.inspect()
     |> command_completed(path, "compile")
   end
 
@@ -84,8 +85,14 @@ defmodule Hexagon do
 
   defp command_completed({:ok, _}, _path, _doing), do: :ok
   defp command_completed({:error, rv}, path, doing) do
+    #TODO: this could be a LOT nicer
     stderr = Keyword.get(rv, :stderr)
-    Logger.error("FAILED at #{doing}: #{path}\n errors: #{stderr}")
+    stdout = Keyword.get(rv, :stdout, [])
+             |> Enum.filter(fn x -> String.contains?(x, "error") end)
+             |> Enum.join("\n")
+    msg = "FAILED at #{doing}: #{path}\nstdout =>\n#{stdout}\nstderr =>\n#{stderr}"
+
+    Logger.error(msg)
     :error
   end
 end
