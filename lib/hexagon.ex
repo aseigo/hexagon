@@ -73,7 +73,6 @@ defmodule Hexagon do
 
   defp compile(path) do
     :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, path}])
-    |> IO.inspect()
     |> command_completed(path, "compile")
   end
 
