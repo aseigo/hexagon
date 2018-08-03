@@ -3,16 +3,21 @@ defmodule Hexagon do
   A hex repo fetcher and builder
   """
 
-  @doc """
-  """
-  def sync_packages(%{package_path: path}) do
+  require Logger
+
+  def sync_packages(path) do
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
     Enum.each(packages, fn package -> sync_package(package, path) end)
+    packages
+    |> Flow.from_enumerable()
+    |> Flow.map(fn info -> sync_package(info, path) end)
+    |> Flow.each(fn path -> build_package(path) end)
+    |> Enum.count()
   end
 
-  def sync_package(%{name: package, versions: versions}, base_path) do
+  defp sync_package(%{name: package, versions: versions}, base_path) do
     current_version = Enum.at(versions, Enum.count(versions) - 1)
     package_dir = Path.join(base_path, package)
     #IO.puts("Checking #{inspect package}, #{inspect current_version}")
@@ -23,10 +28,13 @@ defmodule Hexagon do
       :ok = File.mkdir_p(full_path)
       fetch_package(full_path, package, current_version)
     end
+
+    Path.join(package_dir, current_version)
   end
 
   defp clean_package_dir(dir, keep_subdir) do
     {:ok, files} = File.ls(dir)
+
     found_keeper = Enum.reduce(files, false,
                                fn ^keep_subdir, _ -> true
                                   subdir, acc -> 
@@ -45,5 +53,39 @@ defmodule Hexagon do
 
       _ -> {:error, {:download_failed, package, version}}
     end
+  end
+
+  # mix deps.get && mix compile && mix deps.clean --all && mix clean
+  def build_package(path) do
+    path = String.to_charlist(path)
+    with :ok <- get_deps(path),
+         :ok <- compile(path) do
+      :ok
+    end
+
+    cleanup(path)
+  end
+
+  defp get_deps(path) do
+    :exec.run('mix deps.get', [:sync, :stderr, {:cd, path}])
+    |> command_completed(path, "deps.get")
+  end
+
+  defp compile(path) do
+    :exec.run('mix compile', [:sync, :stderr, {:cd, path}])
+    |> command_completed(path, "compile")
+  end
+
+  defp cleanup(path) do
+    :exec.run('mix deps.clean --all', [:sync, {:cd, path}])
+    :exec.run('mix clean', [:sync, {:cd, path}])
+    :ok
+  end
+
+  defp command_completed({:ok, _}, _path, _doing), do: :ok
+  defp command_completed({:error, rv}, path, doing) do
+    stderr = Keyword.get(rv, :stderr)
+    Logger.error("FAILED at #{doing}: #{path}\n errors: #{stderr}")
+    :error
   end
 end
