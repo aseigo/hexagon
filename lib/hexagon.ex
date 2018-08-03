@@ -9,7 +9,6 @@ defmodule Hexagon do
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
-    Enum.each(packages, fn package -> sync_package(package, path) end)
     packages
     |> Flow.from_enumerable()
     |> Flow.map(fn info -> sync_package(info, path) end)
