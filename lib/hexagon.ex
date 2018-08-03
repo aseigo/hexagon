@@ -55,6 +55,7 @@ defmodule Hexagon do
 
   # mix deps.get && mix compile && mix deps.clean --all && mix clean
   def build_package(path) do
+    IO.puts("=> #{path}")
     path = String.to_charlist(path)
     with :ok <- get_deps(path),
          :ok <- compile(path) do
