@@ -13,7 +13,7 @@ defmodule Hexagon.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :inets, :ssl],
+      extra_applications: [:logger, :inets, :ssl, :erlexec],
       mod: {Hexagon.Application, []}
     ]
   end
@@ -21,12 +21,15 @@ defmodule Hexagon.MixProject do
   defp deps do
     [
       {:hex_erl, github: "hexpm/hex_erl"},
+      {:flow, "~> 0.14"},
+      {:erlexec, "~> 1.9.1"},
+      {:logger_file_backend, "~> 0.0.10"},
+      #{:jason, "~> 1.1.1"},
 
       {:coverex, "~> 1.4.15", only: :test},
       {:credo, "~> 0.8.1", only: [:dev, :test]},
       {:dialyxir, "~> 0.5", only: [:test], runtime: false},
       {:ex_doc, "~> 0.18.1", only: :dev},
-      {:quixir, "~> 0.9.3", only: [:test]},
       {:remix, "~> 0.0.2", only: :dev}
     ]
   end
