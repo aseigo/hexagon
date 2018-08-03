@@ -5,7 +5,7 @@ defmodule Hexagon do
 
   require Logger
 
-  def sync_packages(path) do
+  def check(path) do
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
