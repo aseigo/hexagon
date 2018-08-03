@@ -12,8 +12,7 @@ defmodule Hexagon do
     packages
     |> Flow.from_enumerable()
     |> Flow.map(fn info -> sync_package(info, path) end)
-    |> Flow.each(fn path -> build_package(path) end)
-    |> Enum.count()
+    |> Enum.each(fn path -> build_package(path) end)
   end
 
   defp sync_package(%{name: package, versions: versions}, base_path) do
