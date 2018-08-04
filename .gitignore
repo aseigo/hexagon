@@ -24,3 +24,5 @@ hexagon-*.tar
 .*.swp
 error.log
 priv/petridish/mix.*
+priv/petridish/deps
+priv/petridish/_build
