@@ -1,5 +1,3 @@
-#ifndef HEXAGON_EX
-#define HEXAGON_EX
 defmodule Hexagon do
   @moduledoc """
   A hex repo fetcher and builder
@@ -142,4 +140,3 @@ defmodule Hexagon do
     :error
   end
 end
-#endif // HEXAGON_EX
