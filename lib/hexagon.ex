@@ -101,7 +101,7 @@ defmodule Hexagon do
     petridish = Path.join(System.cwd(), "priv/petridish")
     Hexagon.MixFile.gen(petridish, package, path)
 
-    IO.puts("=> #{path}")
+    IO.write('\r=> #{path}')
     path = String.to_charlist(petridish)
     with :ok <- get_deps(path, log),
          :ok <- compile(path, log) do
