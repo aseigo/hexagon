@@ -99,26 +99,26 @@ defmodule Hexagon do
   # mix deps.get && mix compile && mix deps.clean --all && mix clean
   def build_package({package, path}, log) do
     petridish = Path.join(System.cwd(), "priv/petridish")
+                |> String.to_charlist()
     Hexagon.MixFile.gen(petridish, package, path)
 
     IO.write('\r=> #{path}')
-    path = String.to_charlist(petridish)
-    with :ok <- get_deps(path, log),
-         :ok <- compile(path, log) do
+    with :ok <- get_deps(petridish, package, path, log),
+         :ok <- compile(petridish, package, path, log) do
       :ok
     end
 
-    cleanup(path)
+    cleanup(petridish)
   end
 
-  defp get_deps(path, log) do
-    :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, path}])
-    |> command_completed(path, "deps.get", log)
+  defp get_deps(petridish, package, path, log) do
+    :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, petridish}])
+    |> command_completed(package, path, "deps.get", log)
   end
 
-  defp compile(path, log) do
-    :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, path}])
-    |> command_completed(path, "compile", log)
+  defp compile(petridish, package, path, log) do
+    :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, petridish}])
+    |> command_completed(package, path, "compile", log)
   end
 
   defp cleanup(path) do
@@ -127,8 +127,8 @@ defmodule Hexagon do
     :ok
   end
 
-  defp command_completed({:ok, _}, _path, _doing, _log), do: :ok
-  defp command_completed({:error, rv}, path, doing, log) do
+  defp command_completed({:ok, _}, _package, _path, _doing, _log), do: :ok
+  defp command_completed({:error, rv}, package, path, doing, log) do
     stderr = Keyword.get(rv, :stderr)
     stdout = Keyword.get(rv, :stdout, [])
              |> Enum.filter(fn x -> String.contains?(x, "error") end)
@@ -136,13 +136,15 @@ defmodule Hexagon do
 
     data = %{
       status: "failed",
-      package: path,
+      package: "#{package}",
+      version: Path.basename(path),
       stage: doing,
       stderr: stderr,
       stdout: stdout
     }
 
     Hexagon.Log.add_entry(log, data)
+    IO.puts(" <== FAILED")
     :error
   end
 end
