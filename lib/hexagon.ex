@@ -17,7 +17,7 @@ defmodule Hexagon do
     |> Flow.from_enumerable()
     |> Flow.map(fn info -> sync_package(info, path) end)
     |> Flow.partition(stages: parallel_builds, max_demand: parallel_builds)
-    |> Flow.each(fn path -> build_package(path, log) end)
+    |> Flow.each(fn package -> build_package(package, log) end)
     |> Flow.run()
 
     Hexagon.Log.close(log)
@@ -25,7 +25,7 @@ defmodule Hexagon do
 
   def check_one(package) do
     path = packages_dir()
-    case :hex_repo.get_package("ex_wpvulndb") do
+    case :hex_repo.get_package(package) do
       {:error, _} = error -> error
       {:ok, %{releases: releases}, _} ->
         log = Hexagon.Log.new(package)
@@ -59,7 +59,7 @@ defmodule Hexagon do
       fetch_package(full_path, package, version)
     end
 
-    Path.join(package_dir, version)
+    {package, Path.join(package_dir, version)}
   end
 
   defp version_from_releases(releases) do
@@ -97,9 +97,12 @@ defmodule Hexagon do
   end
 
   # mix deps.get && mix compile && mix deps.clean --all && mix clean
-  def build_package(path, log) do
+  def build_package({package, path}, log) do
+    petridish = Path.join(System.cwd(), "priv/petridish")
+    Hexagon.MixFile.gen(petridish, package, path)
+
     IO.puts("=> #{path}")
-    path = String.to_charlist(path)
+    path = String.to_charlist(petridish)
     with :ok <- get_deps(path, log),
          :ok <- compile(path, log) do
       :ok
