@@ -11,11 +11,14 @@ defmodule Hexagon do
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
     log = Hexagon.Log.new("all")
+    parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
     packages
     |> Flow.from_enumerable()
     |> Flow.map(fn info -> sync_package(info, path) end)
-    |> Enum.each(fn path -> build_package(path, log) end)
+    |> Flow.partition(stages: parallel_builds, max_demand: parallel_builds)
+    |> Flow.each(fn path -> build_package(path, log) end)
+    |> Flow.run()
 
     Hexagon.Log.close(log)
   end
