@@ -139,12 +139,12 @@ defmodule Hexagon do
 
   defp get_deps(petridish, package, path, log) do
     :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, petridish}])
-    |> command_completed(package, path, "deps.get", log)
+    |> command_completed(package, path, :deps, log)
   end
 
   defp compile(petridish, package, path, log) do
     :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, petridish}])
-    |> command_completed(package, path, "compile", log)
+    |> command_completed(package, path, :compile, log)
   end
 
   defp cleanup(path) do
@@ -153,7 +153,18 @@ defmodule Hexagon do
     :ok
   end
 
+  defp command_completed({:ok, _}, package, path, :compile, log) do
+    data = %{
+      built: true,
+      package: "#{package}",
+      version: Path.basename(path)
+    }
+
+    Hexagon.Log.add_entry(log, data)
+    :ok
+  end
   defp command_completed({:ok, _}, _package, _path, _doing, _log), do: :ok
+
   defp command_completed({:error, rv}, package, path, doing, log) do
     stderr = Keyword.get(rv, :stderr)
     stdout = Keyword.get(rv, :stdout, [])
@@ -161,7 +172,7 @@ defmodule Hexagon do
              |> Enum.join("\n")
 
     data = %{
-      status: "failed",
+      built: false,
       package: "#{package}",
       version: Path.basename(path),
       stage: doing,
