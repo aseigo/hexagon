@@ -6,16 +6,10 @@ defmodule Hexagon do
   require Logger
 
   def check_all() do
-    path = packages_dir()
-    File.mkdir_p(path)
-    {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
-
     log = Hexagon.Log.new("all")
     parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
-    packages
-    |> Flow.from_enumerable()
-    |> Flow.map(fn info -> sync_package(info, path) end)
+    prep_package_sync()
     |> Flow.partition(stages: parallel_builds, max_demand: parallel_builds)
     |> Flow.each(fn package -> build_package(package, log) end)
     |> Flow.run()
@@ -34,6 +28,21 @@ defmodule Hexagon do
         |> build_package(log)
         Hexagon.Log.close(log)
     end
+  end
+
+  def sync_package_cache() do
+    prep_package_sync()
+    |> Flow.run()
+  end
+
+  defp prep_package_sync() do
+    path = packages_dir()
+    File.mkdir_p(path)
+    {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
+
+    packages
+    |> Flow.from_enumerable()
+    |> Flow.map(fn info -> sync_package(info, path) end)
   end
 
   defp packages_dir() do
