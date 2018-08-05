@@ -126,6 +126,8 @@ defmodule Hexagon do
   end
 
   defp fetch_package(path, package, version) do
+    IO.puts("=> Fetching #{package} #{version}")
+
     case :hex_repo.get_tarball(package, version) do
       {:ok, tarball, _opts} ->
         unpack(tarball, String.to_charlist(path))
