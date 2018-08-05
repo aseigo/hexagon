@@ -46,24 +46,27 @@ defmodule Hexagon do
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
-    blacklist =
-      case Keyword.get(opts, :blacklist) do
-        nil -> nil
-        list when is_list(list) -> Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
-        %{} = list -> list
-      end
-
-    flow = Flow.from_enumerable(packages)
-
-    flow =
-      if blacklist == nil do
-        flow
-      else
-        Flow.filter(flow, fn %{name: package} -> !Map.has_key?(blacklist, package) end)
-      end
-
-    Flow.map(flow, fn info -> sync_package(info, path) end)
+    packages
+    |> Flow.from_enumerable()
+    |> add_whitelist_filter(Keyword.get(opts, :only))
+    |> add_blacklist_filter(Keyword.get(opts, :exclude))
+    #|> Flow.each(fn %{name: package} -> IO.puts("Doing #{package}") end)
+    |> Flow.map(fn info -> sync_package(info, path) end)
   end
+
+  defp add_blacklist_filter(flow, list) when is_list(list) do
+    blacklist = Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
+    Flow.filter(flow, fn %{name: package} -> !Map.has_key?(blacklist, package) end)
+  end
+
+  defp add_blacklist_filter(flow, _), do: flow
+
+  defp add_whitelist_filter(flow, list) when is_list(list) do
+    whitelist = Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
+    Flow.filter(flow, fn %{name: package} -> Map.has_key?(whitelist, package) end)
+  end
+
+  defp add_whitelist_filter(flow, _), do: flow
 
   defp packages_dir() do
     base_path = Application.get_env(:hexagon, :package_path, "~/packages")
