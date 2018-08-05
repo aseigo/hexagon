@@ -108,7 +108,7 @@ defmodule Hexagon do
   end
 
   # mix deps.get && mix compile && mix deps.clean --all && mix clean
-  def build_package({package, path}, log) do
+  defp build_package({package, path}, log) do
     petridish = Path.join(System.cwd(), "priv/petridish")
                 |> String.to_charlist()
     Hexagon.MixFile.gen(petridish, package, path)
