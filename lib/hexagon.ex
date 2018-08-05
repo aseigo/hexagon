@@ -5,12 +5,12 @@ defmodule Hexagon do
 
   require Logger
 
-  def check_all() do
+  def check_all(opts \\ []) do
     log = Hexagon.Log.new("all")
     parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
     petridish = create_petridish()
-    prep_package_sync()
+    prep_package_sync(opts)
     |> Flow.partition(stages: parallel_builds, max_demand: parallel_builds)
     |> Flow.each(fn package -> build_package(package, petridish, log) end)
     |> Flow.run()
@@ -36,19 +36,33 @@ defmodule Hexagon do
     end
   end
 
-  def sync_package_cache() do
-    prep_package_sync()
+  def sync_package_cache(opts \\ []) do
+    prep_package_sync(opts)
     |> Flow.run()
   end
 
-  defp prep_package_sync() do
+  defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
-    packages
-    |> Flow.from_enumerable()
-    |> Flow.map(fn info -> sync_package(info, path) end)
+    blacklist =
+      case Keyword.get(opts, :blacklist) do
+        nil -> nil
+        list when is_list(list) -> Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
+        %{} = list -> list
+      end
+
+    flow = Flow.from_enumerable(packages)
+
+    flow =
+      if blacklist == nil do
+        flow
+      else
+        Flow.filter(flow, fn %{name: package} -> !Map.has_key?(blacklist, package) end)
+      end
+
+    Flow.map(flow, fn info -> sync_package(info, path) end)
   end
 
   defp packages_dir() do
