@@ -99,9 +99,11 @@ defmodule Hexagon do
   defp fetch_package(path, package, version) do
     case :hex_repo.get_tarball(package, version) do
       {:ok, tarball, _opts} ->
-        :hex_tarball.unpack(tarball, String.to_charlist(path))
+        unpack(tarball, String.to_charlist(path))
 
-      _ -> {:error, {:download_failed, package, version}}
+      _ ->
+        Logger.debug("Failed to download #{package} v#{version}")
+        {:error, {:download_failed, package, version}}
     end
   end
 
@@ -118,6 +120,15 @@ defmodule Hexagon do
     end
 
     cleanup(petridish)
+  end
+
+  defp unpack(tarball, path) do
+    case :hex_tarball.unpack(tarball, path) do
+      {:ok, _} -> :ok
+      {:error, reason} ->
+        Logger.debug("Failed to unpack to #{path}, reason: #{inspect reason}")
+        {:error, reason}
+    end
   end
 
   defp get_deps(petridish, package, path, log) do
