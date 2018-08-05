@@ -9,11 +9,13 @@ defmodule Hexagon do
     log = Hexagon.Log.new("all")
     parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
+    petridish = create_petridish()
     prep_package_sync()
     |> Flow.partition(stages: parallel_builds, max_demand: parallel_builds)
-    |> Flow.each(fn package -> build_package(package, log) end)
+    |> Flow.each(fn package -> build_package(package, petridish, log) end)
     |> Flow.run()
 
+    destroy_petridish(petridish)
     Hexagon.Log.close(log)
   end
 
@@ -22,10 +24,14 @@ defmodule Hexagon do
     case :hex_repo.get_package(package) do
       {:error, _} = error -> error
       {:ok, %{releases: releases}, _} ->
+        petridish = create_petridish()
         log = Hexagon.Log.new(package)
+
         version = version_from_releases(releases)
         sync_package(package, version, path)
-        |> build_package(log)
+        |> build_package(petridish, log)
+
+        destroy_petridish(petridish)
         Hexagon.Log.close(log)
     end
   end
@@ -113,10 +119,19 @@ defmodule Hexagon do
     end
   end
 
+  defp create_petridish() do
+    petridish_template = Path.join(System.cwd(), "priv/petridish")
+    {:ok, petridish} = Temp.mkdir(%{prefix: "hexagon_petridish"})
+    File.cp_r(petridish_template, petridish)
+    String.to_charlist(petridish)
+  end
+
+  def destroy_petridish(petridish) do
+    File.rm_rf(petridish)
+  end
+
   # mix deps.get && mix compile && mix deps.clean --all && mix clean
-  defp build_package({package, path}, log) do
-    petridish = Path.join(System.cwd(), "priv/petridish")
-                |> String.to_charlist()
+  defp build_package({package, path}, petridish, log) do
     Hexagon.MixFile.gen(petridish, package, path)
 
     "\r=> #{path}" |> String.pad_trailing(80) |> IO.write()
