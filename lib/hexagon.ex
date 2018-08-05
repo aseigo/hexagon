@@ -119,7 +119,7 @@ defmodule Hexagon do
                 |> String.to_charlist()
     Hexagon.MixFile.gen(petridish, package, path)
 
-    IO.write('\r=> #{path}')
+    "\r=> #{path}" |> String.pad_trailing(80) |> IO.write()
     with :ok <- get_deps(petridish, package, path, log),
          :ok <- compile(petridish, package, path, log) do
       :ok
