@@ -2,7 +2,7 @@ defmodule Hexagon.Log do
   def new(name \\ "") when is_binary(name)  do
     full_path = Path.join(directory(), generate_filename(name))
     IO.puts("Starting a log at: #{full_path}")
-    {:ok, file} = File.open(full_path, [:append, :utf8])
+    {:ok, file} = File.open(full_path, [:write, :utf8])
     IO.write(file, "[\n")
     file
   end
@@ -14,8 +14,8 @@ defmodule Hexagon.Log do
   end
 
   def close(file) do
-    #FIXME: we add a lame entry since we append a ',' to ever entry in add_entry
-    IO.write(file, "{}\n]")
+    # we write the closing 2 bytes back to over-write the trailing comma
+    :file.pwrite(file, {:cur, -2}, "\n]")
     File.close(file)
   end
 
