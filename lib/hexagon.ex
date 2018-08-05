@@ -59,10 +59,16 @@ defmodule Hexagon do
 
   defp sync_package(package, version, base_path) do
     package_dir = Path.join(base_path, package)
-    #IO.puts("Checking #{inspect package}, #{inspect current_version}")
+    #IO.puts("Checking #{inspect package}, #{inspect version}")
+
+    fetch? =
     if File.exists?(package_dir) do
       clean_package_dir(package_dir, version)
     else
+      true
+    end
+
+    if fetch? do
       full_path = Path.join(package_dir, version)
       :ok = File.mkdir_p(full_path)
       fetch_package(full_path, package, version)
@@ -85,15 +91,15 @@ defmodule Hexagon do
   defp clean_package_dir(dir, keep_subdir) do
     {:ok, files} = File.ls(dir)
 
-    found_keeper = Enum.reduce(files, false,
-                               fn ^keep_subdir, _ -> true
-                                  subdir, acc -> 
-                                    File.rmdir(dir <> subdir)
-                                    acc
-                               end)
-    if !found_keeper do
-      File.mkdir(Path.join(dir, keep_subdir))
-    end
+    found_keeper =
+    Enum.reduce(files, false,
+                fn ^keep_subdir, _ -> true
+                    subdir, acc -> 
+                      File.rmdir(dir <> subdir)
+                      acc
+                end)
+
+    !found_keeper
   end
 
   defp fetch_package(path, package, version) do
