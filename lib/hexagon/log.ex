@@ -2,7 +2,7 @@ defmodule Hexagon.Log do
   def new(name \\ "") when is_binary(name)  do
     full_path = Path.join(directory(), generate_filename(name))
     IO.puts("Starting a log at: #{full_path}")
-    {:ok, file} = File.open(full_path, [:append])
+    {:ok, file} = File.open(full_path, [:append, :utf8])
     IO.write(file, "[\n")
     file
   end
