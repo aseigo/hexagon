@@ -150,7 +150,6 @@ defmodule Hexagon do
     petridish = create_petridish()
     Hexagon.MixFile.gen(petridish, package, path)
 
-    "\r=> #{path}" |> String.pad_trailing(80) |> IO.write()
     with :ok <- get_deps(petridish, package, path, log),
          :ok <- compile(petridish, package, path, log) do
       :ok
@@ -212,7 +211,7 @@ defmodule Hexagon do
     }
 
     Hexagon.Log.add_entry(log, data)
-    IO.puts(" <== FAILED")
+    IO.puts("😞FAILED => #{package} @ #{path}")
     :error
   end
 end
