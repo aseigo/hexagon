@@ -205,7 +205,7 @@ defmodule Hexagon do
     }
 
     Hexagon.Log.add_entry(log, data)
-    IO.puts("😞FAILED => #{package} @ #{path}")
+    IO.puts("😞 FAILED => #{package} @ #{path}")
     :error
   end
 end
