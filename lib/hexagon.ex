@@ -177,12 +177,6 @@ defmodule Hexagon do
     |> command_completed(package, path, :compile, log)
   end
 
-  defp cleanup(path) do
-    :exec.run('mix deps.clean --all', [:sync, {:cd, path}])
-    :exec.run('mix clean', [:sync, {:cd, path}])
-    :ok
-  end
-
   defp command_completed({:ok, _}, package, path, :compile, log) do
     data = %{
       built: true,
