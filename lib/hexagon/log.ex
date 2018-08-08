@@ -6,19 +6,16 @@ defmodule Hexagon.Log do
     IO.puts("Starting a log at: #{full_path}")
     {:ok, file} = File.open(full_path, [:write, :utf8])
     IO.write(file, "[\n\n")
-    {file, full_path}
+    pid = spawn(fn -> log_writer(file) end)
+    {pid, full_path}
   end
 
   def add_entry(file, data) when is_map(data) do
-    {:ok, json} = Jason.encode(data)
-    IO.write(file, json)
-    IO.write(file, ",\n")
+    send(file, {:add, data})
   end
 
   def close(file) do
-    # we write the closing 2 bytes back to over-write the trailing comma
-    :file.pwrite(file, {:cur, -2}, "\n]")
-    File.close(file)
+    send(file, :close)
   end
 
   def fullpath(filename) do
@@ -45,6 +42,21 @@ defmodule Hexagon.Log do
     ~>> Enum.reduce({0, 0}, fn %{"built" => false}, {p, f} -> {p + 1, f + 1}
                                _, {p, f} -> {p + 1, f}
                             end)
+  end
+
+  defp log_writer(file) do
+    receive do
+      :close ->
+        # we write the closing 2 bytes back to over-write the trailing comma
+        :file.pwrite(file, {:cur, -2}, "\n]")
+        File.close(file)
+
+      {:add, data} ->
+        {:ok, json} = Jason.encode(data)
+        IO.write(file, json)
+        IO.write(file, ",\n")
+        log_writer(file)
+    end
   end
 
   defp directory() do
