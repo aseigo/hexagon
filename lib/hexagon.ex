@@ -37,11 +37,17 @@ defmodule Hexagon do
         {log, _} = Hexagon.Log.new(package)
 
         version = version_from_releases(releases)
-        sync_package(package, version, path)
+        sync_package(package, version, path, :all)
         |> build_package(log)
 
         Hexagon.Log.close(log)
     end
+  end
+
+  def check_updated(opts \\ []) do
+    Keyword.put(opts, :only_updated, true)
+    |> Keyword.put(:logfile, "updates")
+    |> check_all()
   end
 
   def recheck_failures(logfile) do
@@ -58,12 +64,15 @@ defmodule Hexagon do
     File.mkdir_p(path)
     {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
 
+    only_updated = Keyword.get(opts, :only_updated, :all)
+
     packages
     |> Flow.from_enumerable()
     |> add_whitelist_filter(Keyword.get(opts, :only))
     |> add_blacklist_filter(Keyword.get(opts, :exclude))
     #|> Flow.each(fn %{name: package} -> IO.puts("Doing #{package}") end)
-    |> Flow.map(fn info -> sync_package(info, path) end)
+    |> Flow.map(fn info -> sync_package(info, path, only_updated) end)
+    |> Flow.filter(fn x -> x != nil end)
   end
 
   defp add_blacklist_filter(flow, list) when is_list(list) do
@@ -87,12 +96,12 @@ defmodule Hexagon do
     base_path
   end
 
-  defp sync_package(%{name: package, versions: versions}, base_path) do
+  defp sync_package(%{name: package, versions: versions}, base_path, only_updated) do
     version = Enum.at(versions, Enum.count(versions) - 1)
-    sync_package(package, version, base_path)
+    sync_package(package, version, base_path, only_updated)
   end
 
-  defp sync_package(package, version, base_path) do
+  defp sync_package(package, version, base_path, only_updated) do
     package_dir = Path.join(base_path, package)
     #IO.puts("Checking #{inspect package}, #{inspect version}")
 
@@ -109,7 +118,11 @@ defmodule Hexagon do
       fetch_package(full_path, package, version)
     end
 
-    {package, Path.join(package_dir, version)}
+    if only_updated === true and !fetch? do
+      nil
+    else
+      {package, Path.join(package_dir, version)}
+    end
   end
 
   defp version_from_releases(releases) do
