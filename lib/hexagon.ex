@@ -103,7 +103,7 @@ defmodule Hexagon do
   defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
-    {:ok, %{packages: packages}, _} = :hex_repo.get_versions(hex_config())
+    {:ok, {_response_code, _headers, %{packages: packages}}} = :hex_repo.get_versions(hex_config())
 
     only_updated = Keyword.get(opts, :only_updated, :all)
 
