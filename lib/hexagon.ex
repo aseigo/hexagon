@@ -1,10 +1,32 @@
 defmodule Hexagon do
   @moduledoc """
-  A hex repo fetcher and builder
+  A hex repo fetcher and builder with several modes of operation:
+
+  * `Hexagon.check_all()` => This will download and attempt to build all packages
+  * `Hexagon.check_updated()` => This will sync the local package cache, and build packages
+  with new versions available
+  * `Hexagon.check_failures(logfile)` => This will build all packages that previous failed
+  as recorded in the file pointed to by logfile. Logfile may be either the name of a log
+  file or a full path. The file should be a Hexagon logfile from a previous run.
+  * `Hexagon.check_one(packagename)` => This checks a single package
+  * `Hexagon.sync_package_cache()` => Ensures the local package cache is current; the `check_*`
+  functions all take appropriate syncronization steps, so one does not usually need to
+  run this explicitly
+
+  With the exception of `Hexagon.check_one/1`, the Hexagon function accept the following
+  options:
+
+  * `only`: a list of packages to limit the build to
+  * `exclude`: a list of packages to exclude from builds
+  * `logfile`: a string to use as part of the logfile name
   """
 
   require Logger
 
+  @spec check_all(opts :: Keyword.t()) :: package_processed_count :: non_neg_integer
+  @doc """
+  Checks all packages after first sync'ing the local cache.
+  """
   def check_all(opts \\ []) do
     logfile = Keyword.get(opts, :logfile, "all")
     {log, logfile_path} = Hexagon.Log.new(logfile)
@@ -29,18 +51,23 @@ defmodule Hexagon do
     processed
   end
 
-  def check_one(package) do
-    path = packages_dir()
-    case :hex_repo.get_package(package) do
+  @spec check_one(package_name :: binary) :: :ok | {:error, any()}
+  @doc """
+  Updates and checks one package
+  """
+  def check_one(package_name) do
+    case :hex_repo.get_package(hex_config(), package_name) do
       {:error, _} = error -> error
       {:ok, %{releases: releases}, _} ->
-        {log, _} = Hexagon.Log.new(package)
+        {log, _} = Hexagon.Log.new(package_name)
 
         version = version_from_releases(releases)
-        sync_package(package, version, path, :all)
+        path = packages_dir()
+        sync_package(package_name, version, path, :all)
         |> build_package(log)
 
         Hexagon.Log.close(log)
+        :ok
     end
   end
 
@@ -73,7 +100,7 @@ defmodule Hexagon do
   defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
-    {:ok, %{packages: packages}, _} = :hex_repo.get_versions()
+    {:ok, %{packages: packages}, _} = :hex_repo.get_versions(hex_config())
 
     only_updated = Keyword.get(opts, :only_updated, :all)
 
@@ -164,7 +191,7 @@ defmodule Hexagon do
   defp fetch_package(path, package, version) do
     IO.puts("=> Fetching #{package} #{version}")
 
-    case :hex_repo.get_tarball(package, version) do
+    case :hex_repo.get_tarball(hex_config(), package, version) do
       {:ok, tarball, _opts} ->
         unpack(tarball, String.to_charlist(path))
 
@@ -248,4 +275,6 @@ defmodule Hexagon do
     IO.puts("😞 FAILED => #{package} @ #{path}")
     :error
   end
+
+  defp hex_config(), do: :hex_core.default_config()
 end
