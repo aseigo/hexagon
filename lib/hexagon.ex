@@ -17,6 +17,10 @@ defmodule Hexagon do
     |> Flow.run()
 
     Hexagon.Log.close(log)
+
+    {processed, failed} = Hexagon.Log.package_counts(logfile)
+    fail_percent = Float.round(failed / processed, 3) * 100
+    IO.puts("Processed #{processed} packages, encountered #{failed} build failures (#{fail_percent}%)")
   end
 
   def check_one(package) do
