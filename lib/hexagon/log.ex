@@ -5,8 +5,8 @@ defmodule Hexagon.Log do
     full_path = Path.join(directory(), generate_filename(name))
     IO.puts("Starting a log at: #{full_path}")
     {:ok, file} = File.open(full_path, [:write, :utf8])
-    IO.write(file, "[\n")
-    file
+    IO.write(file, "[\n\n")
+    {file, full_path}
   end
 
   def add_entry(file, data) when is_map(data) do

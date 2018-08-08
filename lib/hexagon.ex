@@ -7,7 +7,7 @@ defmodule Hexagon do
 
   def check_all(opts \\ []) do
     logfile = Keyword.get(opts, :logfile, "all")
-    log = Hexagon.Log.new()
+    {log, logfile_path} = Hexagon.Log.new(logfile)
 
     parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
@@ -28,7 +28,7 @@ defmodule Hexagon do
     case :hex_repo.get_package(package) do
       {:error, _} = error -> error
       {:ok, %{releases: releases}, _} ->
-        log = Hexagon.Log.new(package)
+        {log, _} = Hexagon.Log.new(package)
 
         version = version_from_releases(releases)
         sync_package(package, version, path)
