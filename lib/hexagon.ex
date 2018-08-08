@@ -59,6 +59,15 @@ defmodule Hexagon do
     |> Flow.run()
   end
 
+  defp prepend_logfile_name(opts, prefix) do
+    Keyword.get(opts, :logfile)
+    |> merge_logfile_parts(prefix)
+    |> (fn fullname -> Keyword.put(opts, :logfile, fullname) end).()
+  end
+
+  defp merge_logfile_parts(nil, prefix), do: prefix
+  defp merge_logfile_parts(name, prefix), do: "#{prefix}_#{name}"
+
   defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
