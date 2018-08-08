@@ -38,6 +38,10 @@ defmodule Hexagon do
     end
   end
 
+  def recheck_failures(logfile) do
+    check_all([only: Hexagon.Log.failures(logfile), logfile: "retry_failures"])
+  end
+
   def sync_package_cache(opts \\ []) do
     prep_package_sync(opts)
     |> Flow.run()
