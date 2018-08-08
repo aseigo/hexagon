@@ -46,12 +46,14 @@ defmodule Hexagon do
 
   def check_updated(opts \\ []) do
     Keyword.put(opts, :only_updated, true)
-    |> Keyword.put(:logfile, "updates")
+    |> prepend_logfile_name("updates")
     |> check_all()
   end
 
-  def recheck_failures(logfile) do
-    check_all([only: Hexagon.Log.failures(logfile), logfile: "retry_failures"])
+  def check_failures(logfile, opts \\ []) do
+    Keyword.put(opts, :only, Hexagon.Log.failures(logfile))
+    |> prepend_logfile_name("failures")
+    |> check_all()
   end
 
   def sync_package_cache(opts \\ []) do
