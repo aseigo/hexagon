@@ -181,7 +181,7 @@ defmodule Hexagon do
     String.to_charlist(petridish)
   end
 
-  def destroy_petridish(petridish) do
+  defp destroy_petridish(petridish) do
     File.rm_rf(petridish)
   end
 
