@@ -91,15 +91,18 @@ defmodule Hexagon do
     |> Flow.run()
   end
 
+  @spec prepend_logfile_name(opts :: Keyword.t(), prefix :: String.t()) :: String.t()
   defp prepend_logfile_name(opts, prefix) do
     Keyword.get(opts, :logfile)
     |> merge_logfile_parts(prefix)
     |> (fn fullname -> Keyword.put(opts, :logfile, fullname) end).()
   end
 
+  @spec merge_logfile_parts(nil | String.t(), prefix :: String.t()) :: String.t()
   defp merge_logfile_parts(nil, prefix), do: prefix
   defp merge_logfile_parts(name, prefix), do: "#{prefix}_#{name}"
 
+  @spec prep_package_sync(opts :: Keyword.t()) :: %Flow{}
   defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
@@ -116,6 +119,7 @@ defmodule Hexagon do
     |> Flow.filter(fn x -> x != nil end)
   end
 
+  @spec add_blacklist_filter(%Flow{}, exclude_packages :: []) :: %Flow{}
   defp add_blacklist_filter(flow, list) when is_list(list) do
     blacklist = Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
     Flow.filter(flow, fn %{name: package} -> !Map.has_key?(blacklist, package) end)
@@ -123,6 +127,7 @@ defmodule Hexagon do
 
   defp add_blacklist_filter(flow, _), do: flow
 
+  @spec add_whitelist_filter(%Flow{}, include_packages :: []) :: %Flow{}
   defp add_whitelist_filter(flow, list) when is_list(list) do
     whitelist = Enum.reduce(list, %{}, fn p, acc -> Map.put(acc, p, 1) end)
     Flow.filter(flow, fn %{name: package} -> Map.has_key?(whitelist, package) end)
@@ -130,6 +135,7 @@ defmodule Hexagon do
 
   defp add_whitelist_filter(flow, _), do: flow
 
+  @spec packages_dir() :: String.t()
   defp packages_dir() do
     base_path = Application.get_env(:hexagon, :package_path, "~/packages")
                 |> Path.expand()
@@ -137,11 +143,13 @@ defmodule Hexagon do
     base_path
   end
 
+  @spec sync_package(package_desc :: %{}, packages_path :: String.t(), only_updated :: false | any()) :: nil | {package :: String.t(), path :: String.t()}
   defp sync_package(%{name: package, versions: versions}, base_path, only_updated) do
     version = Enum.at(versions, Enum.count(versions) - 1)
     sync_package(package, version, base_path, only_updated)
   end
 
+  @spec sync_package(package :: String.t(), verson :: String.t(), packages_path :: String.t(), only_updated :: false | any()) :: nil | {package :: String.t(), path :: String.t()}
   defp sync_package(package, version, base_path, only_updated) do
     package_dir = Path.join(base_path, package)
     #IO.puts("Checking #{inspect package}, #{inspect version}")
@@ -166,6 +174,7 @@ defmodule Hexagon do
     end
   end
 
+  @spec version_from_releases(release_info :: [%{}]) :: version :: String.t()
   defp version_from_releases(releases) do
     Enum.reduce(releases, "0.0.0",
                 fn %{version: version}, acc ->
@@ -177,6 +186,7 @@ defmodule Hexagon do
                 end)
   end
 
+  @spec clean_package_dir(dir :: String.t(), keep_subdir :: boolean) :: current_version_exists :: boolean
   defp clean_package_dir(dir, keep_subdir) do
     {:ok, files} = File.ls(dir)
 
@@ -191,6 +201,7 @@ defmodule Hexagon do
     !found_keeper
   end
 
+  @spec fetch_package(packages_path :: String.t(), package :: String.t(), version :: String.t()) :: :ok | {:error, reason :: any()}
   defp fetch_package(path, package, version) do
     IO.puts("=> Fetching #{package} #{version}")
 
@@ -204,6 +215,7 @@ defmodule Hexagon do
     end
   end
 
+  @spec create_petridish() :: path_to_petridish :: String.t()
   defp create_petridish() do
     petridish_template = Path.join(System.cwd(), "priv/petridish")
     {:ok, petridish} = Temp.mkdir(%{prefix: "hexagon_petridish"})
@@ -211,11 +223,13 @@ defmodule Hexagon do
     String.to_charlist(petridish)
   end
 
+  @spec destroy_petridish(path_to_petridish :: String.t()) :: :ok
   defp destroy_petridish(petridish) do
     File.rm_rf(petridish)
+    :ok
   end
 
-  # mix deps.get && mix compile && mix deps.clean --all && mix clean
+  @spec build_package({package_name :: String.t(), path :: String.t()}, logfile :: pid()) :: :ok
   defp build_package({package, path}, log) do
     petridish = create_petridish()
     Hexagon.MixFile.gen(petridish, package, path)
@@ -228,6 +242,7 @@ defmodule Hexagon do
     destroy_petridish(petridish)
   end
 
+  @spec unpack(tarball :: :hext_tarball.tarball(), path :: String.t()) :: :ok | {:error, reason :: any}
   defp unpack(tarball, path) do
     case :hex_tarball.unpack(tarball, path) do
       {:ok, _} -> :ok
@@ -237,16 +252,19 @@ defmodule Hexagon do
     end
   end
 
+  @spec get_deps(path_to_petridish :: String.t(), package_name :: String.t(), packages_path :: String.t(), log :: pid()) :: :ok | :error
   defp get_deps(petridish, package, path, log) do
     :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, petridish}])
     |> command_completed(package, path, :deps, log)
   end
 
+  @spec compile(path_to_petridish :: String.t(), package_name :: String.t(), packages_path :: String.t(), log :: pid()) :: :ok | :error
   defp compile(petridish, package, path, log) do
     :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, petridish}])
     |> command_completed(package, path, :compile, log)
   end
 
+  @spec command_completed({:ok | :error, info :: any}, package_name :: String.t(), packages_path :: String.t(), action :: atom(), log :: pid()) :: :ok | :error
   defp command_completed({:ok, _}, package, path, :compile, log) do
     data = %{
       built: true,
@@ -279,5 +297,6 @@ defmodule Hexagon do
     :error
   end
 
+  @spec hex_config() :: config :: %{}
   defp hex_config(), do: :hex_core.default_config()
 end
