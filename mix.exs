@@ -24,7 +24,6 @@ defmodule Hexagon.MixProject do
       {:flow, "~> 0.14"},
       {:hex_erl, github: "hexpm/hex_erl"},
       {:jason, "~> 1.1.1"},
-      {:logger_file_backend, "~> 0.0.10"},
       {:ok, "~> 1.11.0"},
       {:temp, "~> 0.4"},
 
