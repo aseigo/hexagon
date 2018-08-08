@@ -20,11 +20,12 @@ defmodule Hexagon.MixProject do
 
   defp deps do
     [
-      {:hex_erl, github: "hexpm/hex_erl"},
-      {:flow, "~> 0.14"},
       {:erlexec, "~> 1.9.1"},
-      {:logger_file_backend, "~> 0.0.10"},
+      {:flow, "~> 0.14"},
+      {:hex_erl, github: "hexpm/hex_erl"},
       {:jason, "~> 1.1.1"},
+      {:logger_file_backend, "~> 0.0.10"},
+      {:ok, "~> 1.11.0"},
       {:temp, "~> 0.4"},
 
       {:coverex, "~> 1.4.15", only: :test},

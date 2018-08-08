@@ -1,4 +1,6 @@
 defmodule Hexagon.Log do
+  import OK, only: [~>>: 2]
+
   def new(name \\ "") when is_binary(name)  do
     full_path = Path.join(directory(), generate_filename(name))
     IO.puts("Starting a log at: #{full_path}")
@@ -17,6 +19,32 @@ defmodule Hexagon.Log do
     # we write the closing 2 bytes back to over-write the trailing comma
     :file.pwrite(file, {:cur, -2}, "\n]")
     File.close(file)
+  end
+
+  def fullpath(filename) do
+    if File.exists?(filename) do
+      Path.expand(filename)
+    else
+      Path.join(directory(), filename) |> Path.expand()
+    end
+  end
+
+  def failures(filename) do
+    fullpath(filename)
+    |> File.read()
+    ~>> Jason.decode()
+    ~>> Enum.reduce([], fn %{"built" => false, "package" => package}, acc -> [package | acc]
+                          _, acc -> acc
+                        end)
+  end
+
+  def package_counts(filename) do
+    fullpath(filename)
+    |> File.read()
+    ~>> Jason.decode()
+    ~>> Enum.reduce({0, 0}, fn %{"built" => false}, {p, f} -> {p + 1, f + 1}
+                               _, {p, f} -> {p + 1, f}
+                            end)
   end
 
   defp directory() do
