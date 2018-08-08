@@ -6,7 +6,9 @@ defmodule Hexagon do
   require Logger
 
   def check_all(opts \\ []) do
-    log = Hexagon.Log.new("all")
+    logfile = Keyword.get(opts, :logfile, "all")
+    log = Hexagon.Log.new()
+
     parallel_builds = Application.get_env(:hexagon, :parallel_builds, 1)
 
     prep_package_sync(opts)
