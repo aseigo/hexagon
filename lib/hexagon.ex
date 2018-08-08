@@ -71,18 +71,21 @@ defmodule Hexagon do
     end
   end
 
+  @spec check_updated(opts :: Keyword.t()) :: package_processed_count :: non_neg_integer
   def check_updated(opts \\ []) do
     Keyword.put(opts, :only_updated, true)
     |> prepend_logfile_name("updates")
     |> check_all()
   end
 
+  @spec check_failures(logfile :: String.t(), opts :: Keyword.t()) :: package_processed_count :: non_neg_integer
   def check_failures(logfile, opts \\ []) do
     Keyword.put(opts, :only, Hexagon.Log.failures(logfile))
     |> prepend_logfile_name("failures")
     |> check_all()
   end
 
+  @spec sync_package_cache(opts :: Keyword.t()) :: :ok
   def sync_package_cache(opts \\ []) do
     prep_package_sync(opts)
     |> Flow.run()
