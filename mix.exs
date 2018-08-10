@@ -22,7 +22,8 @@ defmodule Hexagon.MixProject do
     [
       {:erlexec, "~> 1.9.1"},
       {:flow, "~> 0.14"},
-      {:hex_erl, github: "hexpm/hex_erl"},
+      {:hex_core, "0.1.0"},
+      #{:hex_erl, github: "hexpm/hex_erl"},
       {:jason, "~> 1.1.1"},
       {:ok, "~> 1.11.0"},
       {:temp, "~> 0.4"},

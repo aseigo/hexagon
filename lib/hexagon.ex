@@ -58,7 +58,7 @@ defmodule Hexagon do
   def check_one(package_name) do
     case :hex_repo.get_package(hex_config(), package_name) do
       {:error, _} = error -> error
-      {:ok, %{releases: releases}, _} ->
+      {:ok, {_response_code, _response_headers, %{releases: releases}}} ->
         {log, _} = Hexagon.Log.new(package_name)
 
         version = version_from_releases(releases)
@@ -106,7 +106,7 @@ defmodule Hexagon do
   defp prep_package_sync(opts) do
     path = packages_dir()
     File.mkdir_p(path)
-    {:ok, {_response_code, _headers, %{packages: packages}}} = :hex_repo.get_versions(hex_config())
+    {:ok, {_response_code, _response_headers, %{packages: packages}}} = :hex_repo.get_versions(hex_config())
 
     only_updated = Keyword.get(opts, :only_updated, :all)
 
@@ -206,11 +206,12 @@ defmodule Hexagon do
     IO.puts("=> Fetching #{package} #{version}")
 
     case :hex_repo.get_tarball(hex_config(), package, version) do
-      {:ok, tarball, _opts} ->
+      {:ok, {_response_code, _response_headers, tarball}} ->
         unpack(tarball, String.to_charlist(path))
 
-      _ ->
-        Logger.debug("Failed to download #{package} v#{version}")
+      error ->
+        Logger.debug("Failed to download #{package} v#{version} with #{inspect error}")
+        File.rmdir(path)
         {:error, {:download_failed, package, version}}
     end
   end
