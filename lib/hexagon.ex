@@ -255,13 +255,13 @@ defmodule Hexagon do
 
   @spec get_deps(path_to_petridish :: String.t(), package_name :: String.t(), packages_path :: String.t(), log :: pid()) :: :ok | :error
   defp get_deps(petridish, package, path, log) do
-    :exec.run('mix deps.get', [:sync, :stderr, :stdout, {:cd, petridish}])
+    :exec.run('MIX_ENV=prod mix deps.get', [:sync, :stderr, :stdout, {:cd, petridish}])
     |> command_completed(package, path, :deps, log)
   end
 
   @spec compile(path_to_petridish :: String.t(), package_name :: String.t(), packages_path :: String.t(), log :: pid()) :: :ok | :error
   defp compile(petridish, package, path, log) do
-    :exec.run('mix compile', [:sync, :stderr, :stdout, {:cd, petridish}])
+    :exec.run('MIX_ENV=prod mix compile', [:sync, :stderr, :stdout, {:cd, petridish}])
     |> command_completed(package, path, :compile, log)
   end
 
