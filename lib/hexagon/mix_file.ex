@@ -4,6 +4,8 @@ defmodule Hexagon.MixFile do
     |> Path.join("mix.lock")
     |> File.rm()
 
+    package_version = Path.basename(package_path)
+
     content = [~s(
 defmodule Petridish.MixProject do
 use Mix.Project
@@ -12,7 +14,7 @@ def project do
 [
   app: :petridish,
   version: "0.1.0",
-  deps: [{:), package_name, ~s(, path: "), package_path, ~s("}]
+  deps: [{:), package_name, ~s(, "~> ), package_version, ~s("}]
 ]
 end
 end)]
